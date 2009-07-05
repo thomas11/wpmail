@@ -100,9 +100,9 @@ in wpmail-posts-dir.  There is no need to save this file,
 however, it can be sent, with TITLE preserved, without being
 saved.
 
-If the third argument INIT-CONTENT is non-nil, the new post
-buffer is filled with the region if it exists, and with the whole
-content of the current buffer otherwise.
+If INIT-CONTENT is non-nil (interactively, with prefix argument),
+the new post buffer is filled with the region if it exists, and
+with the whole content of the current buffer otherwise.
 
 The new post buffer will contain a list of shortcodes, directives
 the wordpress software evaluates when it receives the post. They
