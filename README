@@ -1,16 +1,18 @@
 * About
 
-wpmail is a helper to post to wrodpress.com by e-mail from Emacs. See
-wpmail.el for more info.
+wpmail is an Emacs extension to make posting to wordpress.com by
+e-mail easier. See wpmail.el for more info.
+
+It's the first Emacs code I publish. I've tried to follow the
+conventions outlined in the ELisp manual; please let me know if you
+find anything that should be fixed or could be improved.
 
 
 * TODO
 
-  - Decent configuration, use defvar and don't clutter global
-    namespace. Or customize.
-  - Validity checks before mailing? Might be overkill.
-  - Post from current buffer, infer title, possibly depending on mode.
-    - Done except honoring mode, and this should better be left to
-      users as it will vary wildly.  I don't need it at all, actually.
+It works ok for me.
+
+Nice to have maybe:
+  - Validity checks of the shortcodes before mailing.
   - Tests, possibly using ert.el
     <http://lists.gnu.org/archive/html/emacs-devel/2007-12/msg01315.html>
