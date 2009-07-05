@@ -1,0 +1,16 @@
+* About
+
+wpmail is a helper to post to wrodpress.com by e-mail from Emacs. See
+wpmail.el for more info.
+
+
+* TODO
+
+  - Decent configuration, use defvar and don't clutter global
+    namespace. Or customize.
+  - Validity checks before mailing? Might be overkill.
+  - Post from current buffer, infer title, possibly depending on mode.
+    - Done except honoring mode, and this should better be left to
+      users as it will vary wildly.  I don't need it at all, actually.
+  - Tests, possibly using ert.el
+    <http://lists.gnu.org/archive/html/emacs-devel/2007-12/msg01315.html>
