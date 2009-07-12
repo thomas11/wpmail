@@ -30,8 +30,11 @@
 ;; <http://support.wordpress.com/post-by-email/>.
 
 ;; Start a new post, possibly from the region or the buffer, with
-;; wpmail-new-post, and send it with wpmail-send-post when you're
-;; done.  See the documentation of these functions for details.
+;; wpmail-new-post, and send it with wpmail-send-post when you are
+;; done.  wpmail-new-post will prompt for title and category; it will
+;; propose some titles you can see via M-n, and auto-completes the
+;; categories in wpmail-categories.  See the documentation of these
+;; functions for details.
 
 ;; You must customize the following variables before you can use it.
 
@@ -43,7 +46,7 @@ there. You don't need to save the files at all, however.")
 (defconst wpmail-post-email "FOO@post.wordpress.com"
   "The e-mail address you got from wordpress.com to send posts to.")
 
-(defvar wpmail-categories '("Own Code", "Stuff", "Weekly Links", "Weekly Reading")
+(defvar wpmail-categories '("Own Code" "Stuff" "Weekly Links" "Weekly Reading")
   "A list of the categories you use for blog posts.
 When starting a new post, wpmail will ask you for the
 category. These will be available for tab completion.  However,
@@ -53,7 +56,7 @@ you can also give a category that is not in this list.")
   "A list of post tags that will appear whenever you start a new post.")
 
 (defconst wpmail-category-is-also-tag t
-  "When starting a new post, shall its category also be one of its tags?")
+  "Non-nil means that initially a post's category will also be one of its tags.")
 
 
 ;; Some helpers that might go into a more general library.
@@ -80,7 +83,6 @@ some text around point, if it's not empty and not too long."
     	(if (sensible-option-p option)
     	    (add-to-list 'options (trim option)))))
     options))
-(wpmail-options-for-post-title)
 
 (defun buffer-or-region ()
   "Return the region if it exists, the whole buffer otherwise."
@@ -90,15 +92,26 @@ some text around point, if it's not empty and not too long."
 
 ;; End helpers -------------------------------------------
 
+(defvar wpmail-post-title "wpmail.el post"
+  "The post's title when sending it off.
+Should be set via wpmail-new-post.")
 
 (defun wpmail-new-post (title category init-content)
   "Start a new wordpress blog post.
 The post will have the title TITLE and be in category CATEGORY.
 
+The function proposes some titles based on the buffer name and
+text around point, if any.  These propositions are in the
+\"future history\", accessible by M-n.
+
+In the category prompt, the values of wpmail-categories are
+available for auto-completion.  However, you can also enter any
+category that is not in wpmail-categories.
+
 A new buffer will be created, visiting the file TITLE.wordpress
 in wpmail-posts-dir.  There is no need to save this file,
-however, it can be sent, with TITLE preserved, without being
-saved.
+however.  You can send it, with TITLE preserved, without saving
+it.
 
 If INIT-CONTENT is non-nil (interactively, with prefix argument),
 the new post buffer is filled with the region if it exists, and
@@ -115,16 +128,15 @@ about shortcodes."
 		(read-string "Title: " nil nil (options-for-post-title) nil)
 		(completing-read "Category: " wpmail-categories)
 		current-prefix-arg))
-  (let ((content (if init-content (wpmail-buffer-or-region) nil)))
-    (wpmail-initialize-new-post title category content)))
+  (let ((content (if init-content (buffer-or-region) nil)))
+    (initialize-new-post title category content)))
 
 (defun initialize-new-post (title category content)
   "Does the actual work after wpmail-new-post got the user's input."
   (unless content (setq content ""))
-  (wpmail-create-and-show-new-post-buffer title category content)
+  (create-and-show-new-post-buffer title category content)
   (set-visited-file-name (concat wpmail-posts-dir "/" title ".wordpress"))
-  (make-local-variable 'wpmail-post-title)
-  (setq wpmail-post-title title))
+  (set (make-local-variable 'wpmail-post-title) title))
 
 (defun create-and-show-new-post-buffer (title category content)
   "Create a new buffer named TITLE and initialize it."
@@ -133,7 +145,7 @@ about shortcodes."
     (goto-char (point-max))
     (insert "\n")
     (insert content)
-    (insert (wpmail-initial-shortcodes category wpmail-default-tags))
+    (insert (initial-shortcodes category wpmail-default-tags))
     (goto-char (point-min))
     (switch-to-buffer post-buffer)))
 

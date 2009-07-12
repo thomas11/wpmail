@@ -1,7 +1,8 @@
 * About
 
-wpmail is an Emacs extension to make posting to wordpress.com by
-e-mail easier. See wpmail.el for more info.
+wpmail is an Emacs extension to make posting to Wordpress by e-mail
+easier.  See wpmail.el for more info.  It was only tested with
+wordpress.com so far, but should work with other installations, too.
 
 It's the first Emacs code I publish. I've tried to follow the
 conventions outlined in the ELisp manual; please let me know if you
