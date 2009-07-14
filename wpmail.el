@@ -62,29 +62,29 @@ you can also give a category that is not in this list.")
 ;; Some helpers that might go into a more general library.
 ;; -------------------------------------------------------
 
-(defun trim (string)
+(defun wpmail-trim (string)
   "Remove leading and trailing whitespace from STRING.
 From http://www.math.umd.edu/~halbert/dotemacs.html."
   (replace-regexp-in-string "\\(^[ \t]*\\|[ \t]*$\\)" "" string))
 
-(defun options-for-post-title ()
+(defun wpmail-options-for-post-title ()
   "Make a list of suggestions for a blog post title.
 The list contains at least the buffer name.  It also contains
 some text around point, if it's not empty and not too long."
   (defun sensible-option-p (str)
     (and (stringp str) 
 	 (< (length str) 60)
-	 (> (length (trim str)) 4)))
+	 (> (length (wpmail-trim str)) 4)))
 
   (let ((options (list (buffer-name))))
     ;; Things at point
     (dolist (thing-kind (list 'word 'line 'sentence))
       (let ((option (thing-at-point thing-kind)))
     	(if (sensible-option-p option)
-    	    (add-to-list 'options (trim option)))))
+    	    (add-to-list 'options (wpmail-trim option)))))
     options))
 
-(defun buffer-or-region ()
+(defun wpmail-buffer-or-region ()
   "Return the region if it exists, the whole buffer otherwise."
   (if (use-region-p)
       (buffer-substring (region-beginning) (region-end))
@@ -125,31 +125,31 @@ change the post tags or the status. See
 <http://support.wordpress.com/post-by-email/> for documentation
 about shortcodes."
   (interactive (list 
-		(read-string "Title: " nil nil (options-for-post-title) nil)
+		(read-string "Title: " nil nil (wpmail-options-for-post-title) nil)
 		(completing-read "Category: " wpmail-categories)
 		current-prefix-arg))
-  (let ((content (if init-content (buffer-or-region) nil)))
-    (initialize-new-post title category content)))
+  (let ((content (if init-content (wpmail-buffer-or-region) nil)))
+    (wpmail-initialize-new-post title category content)))
 
-(defun initialize-new-post (title category content)
+(defun wpmail-initialize-new-post (title category content)
   "Does the actual work after wpmail-new-post got the user's input."
   (unless content (setq content ""))
-  (create-and-show-new-post-buffer title category content)
+  (wpmail-create-and-show-new-post-buffer title category content)
   (set-visited-file-name (concat wpmail-posts-dir "/" title ".wordpress"))
   (set (make-local-variable 'wpmail-post-title) title))
 
-(defun create-and-show-new-post-buffer (title category content)
+(defun wpmail-create-and-show-new-post-buffer (title category content)
   "Create a new buffer named TITLE and initialize it."
   (let ((post-buffer (get-buffer-create title)))
     (set-buffer post-buffer)
     (goto-char (point-max))
     (insert "\n")
     (insert content)
-    (insert (initial-shortcodes category wpmail-default-tags))
+    (insert (wpmail-initial-shortcodes category wpmail-default-tags))
     (goto-char (point-min))
     (switch-to-buffer post-buffer)))
 
-(defun initial-shortcodes (category tags)
+(defun wpmail-initial-shortcodes (category tags)
   "Return the wordpress shortcodes as a string; see wpmail-new-post."
   (mapconcat 'identity 
 	     (list
@@ -169,6 +169,7 @@ about shortcodes."
 	      "[password secret-password]")
 	     "\n"))
 
+; TODO do we need to require something mail-related here?
 (defun wpmail-send-post ()
   "Send the post to wordpress.com by e-mail.
 Partly copied from Trey Jackson
