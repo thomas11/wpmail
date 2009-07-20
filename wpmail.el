@@ -36,12 +36,24 @@
 ;; categories in wpmail-categories.  See the documentation of these
 ;; functions for details.
 
-;; You must customize the following variables before you can use it.
+;;; Dependencies:
+;; Message from Gnus.  It is included in Emacs, at least in version 23
+;; which I'm using.  Tested with Gnus v5.13.
+
+;;; Installation:
+;; Customize the variables at the top of the code section, and
+;; (require 'wpmail) in your init file.
+
+;;; History:
+;; 2009-07: First release, git hash 4005549c87a95b7f0817d0cb9531118b505e7ad7
+
+;;; Code:
+(require 'message)
 
 (defconst wpmail-posts-dir "~/Documents/Blog/jugglingbits.wordpress.com/posts"
   "The directory where you store your blog posts.
 New posts will be started in a new buffer visiting a file
-there. You don't need to save the files at all, however.")
+there.  You don't need to save the files at all, however.")
 
 (defconst wpmail-post-email "FOO@post.wordpress.com"
   "The e-mail address you got from wordpress.com to send posts to.")
@@ -49,7 +61,7 @@ there. You don't need to save the files at all, however.")
 (defvar wpmail-categories '("Own Code" "Stuff" "Weekly Links" "Weekly Reading")
   "A list of the categories you use for blog posts.
 When starting a new post, wpmail will ask you for the
-category. These will be available for tab completion.  However,
+category.  These will be available for tab completion.  However,
 you can also give a category that is not in this list.")
 
 (defvar wpmail-default-tags "code,programming,testing"
@@ -94,7 +106,7 @@ some text around point, if it's not empty and not too long."
 
 (defvar wpmail-post-title "wpmail.el post"
   "The post's title when sending it off.
-Should be set via wpmail-new-post.")
+Should be set via `wpmail-new-post'.")
 
 (defun wpmail-new-post (title category init-content)
   "Start a new wordpress blog post.
@@ -169,7 +181,6 @@ about shortcodes."
 	      "[password secret-password]")
 	     "\n"))
 
-; TODO do we need to require something mail-related here?
 (defun wpmail-send-post ()
   "Send the post to wordpress.com by e-mail.
 Partly copied from Trey Jackson
@@ -183,3 +194,4 @@ Partly copied from Trey Jackson
 
 
 (provide 'wpmail)
+;;; wpmail.el ends here
