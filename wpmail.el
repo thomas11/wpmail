@@ -65,7 +65,7 @@ you can also give a category that is not in this list.")
 (defun wpmail-trim (string)
   "Remove leading and trailing whitespace from STRING.
 From http://www.math.umd.edu/~halbert/dotemacs.html."
-  (replace-regexp-in-string "\\(^[ \t]*\\|[ \t]*$\\)" "" string))
+  (replace-regexp-in-string "\\(^[ \t\n]*\\|[ \t\n]*$\\)" "" string))
 
 (defun wpmail-options-for-post-title ()
   "Make a list of suggestions for a blog post title.
@@ -82,7 +82,7 @@ some text around point, if it's not empty and not too long."
       (let ((option (thing-at-point thing-kind)))
     	(if (sensible-option-p option)
     	    (add-to-list 'options (wpmail-trim option)))))
-    options))
+    (delete-dups options)))
 
 (defun wpmail-buffer-or-region ()
   "Return the region if it exists, the whole buffer otherwise."
