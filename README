@@ -7,13 +7,3 @@ wordpress.com so far, but should work with other installations, too.
 It's the first Emacs code I publish. I've tried to follow the
 conventions outlined in the ELisp manual; please let me know if you
 find anything that should be fixed or could be improved.
-
-
-* TODO
-
-It works ok for me.
-
-Nice to have maybe:
-  - Validity checks of the shortcodes before mailing.
-  - Tests, possibly using ert.el
-    <http://lists.gnu.org/archive/html/emacs-devel/2007-12/msg01315.html>
