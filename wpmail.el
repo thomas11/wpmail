@@ -45,32 +45,36 @@
 ;; (require 'wpmail) in your init file.
 
 ;;; History:
-;; 2009-07: First release, git hash 4005549c87a95b7f0817d0cb9531118b505e7ad7
+;; 2009-07:    First release.
+;; 2009-11-03: Add post-configured-p and use it. Allow creating a new
+;;             post in current buffer.
 
 ;;; TODO
 
 ;; When proposing the file name for a title, remove suffixes.
 
-;; Function or buffer-local variable "initialized-p" that records if
-;; current buffer was initialized using wpmail-new-post, so it has a
-;; title etc. If not, ask for these things before sending. On second
-;; thought, do we even need wpmail-new-post? Just let the user work,
-;; and ask when sending. This stuff is not stored across sessions
-;; anyway.
+;; Add Markdown support, converting the post to HTML when sending.
+
+;; Offer before- and after-send hooks, to allow things like
+;; transforming the markup or saving all published posts in a certain
+;; directory.
 
 ;;; Code:
 (require 'message)
 
 (defconst wpmail-posts-dir "~/Documents/Blog/jugglingbits.wordpress.com/posts"
   "The directory where you store your blog posts.
-New posts will be started in a new buffer visiting a file
-there.  You don't need to save the files at all, however.")
+wpmail-new-post will open a new buffer visiting a file there.
+Can be nil; you can always turn the current buffer into a blog
+post with wpmail-new-post-here, and there is no need to save it
+to a file.")
 
 (defconst wpmail-post-email "FOO@post.wordpress.com"
   "The e-mail address you got from wordpress.com to send posts to.")
 
 (defvar wpmail-categories '("Academia"
 			    "Best Practices"
+			    "Elsewhere"
 			    "Links"
 			    "Musings"
 			    "Nitty Gritty"
@@ -128,7 +132,7 @@ some text around point, if it's not empty and not too long."
 Will be set by `wpmail-new-post' or `wpmail-new-post-here'.")
 
 (defun wpmail-new-post (title category init-content)
-  "Start a new wordpress blog post.
+  "Start a new wordpress blog post in a new buffer.
 The post will have the title TITLE and be in category CATEGORY.
 
 The function proposes some titles based on the buffer name and
@@ -136,13 +140,13 @@ text around point, if any.  These propositions are in the
 \"future history\", accessible by M-n.
 
 In the category prompt, the values of wpmail-categories are
-available for auto-completion.  However, you can also enter any
-category that is not in wpmail-categories.
-
-A new buffer will be created, visiting the file TITLE.wordpress
-in wpmail-posts-dir.  There is no need to save this file,
-however.  You can send it, with TITLE preserved, without saving
+available for auto-completion.  You can also enter any category
+that is not in wpmail-categories, but your wordpress must know
 it.
+
+A new buffer will be created, visiting the file TITLE.wp in
+wpmail-posts-dir.  There is no need to save this file, however.
+You can send it, with TITLE preserved, without saving it.
 
 If INIT-CONTENT is non-nil (interactively, with prefix argument),
 the new post buffer is filled with the region if it exists, and
@@ -164,8 +168,8 @@ about shortcodes."
 
 (defun wpmail-new-post-here (title category)
   "Start a new wordpress blog post in the current buffer.
-The buffer's content will be left untouched, and the wordpress
-shortcodes will be inserted at the end."
+It works like wpmail-new-post, except that everything happens in
+the current buffer."
   (interactive (list 
 		(read-string "Title: " nil nil (wpmail-possible-titles) nil)
 		(completing-read "Category: " wpmail-categories)))
@@ -192,11 +196,16 @@ directory otherwise. The suffix depends on wpmail-use-markdown."
     (switch-to-buffer post-buffer)))
 
 (defun wpmail-initialize-this-buffer (title category restore-point)
-  (set (make-local-variable 'wpmail-post-title) title)
-  (goto-char (point-max))
-  (insert "\n\n"
-	  (wpmail-initial-shortcodes category wpmail-default-tags))
-  (goto-char restore-point))
+  (let ((configured (wpmail-post-configured-p))
+	(warning "This buffer seems to be initialized as a wordpress post already. New shortcodes will simply be added at the end. Continue?"))
+    (when (or (not configured)
+	      (and configured
+		   (y-or-n-p warning)))
+      (set (make-local-variable 'wpmail-post-title) title)
+      (goto-char (point-max))
+      (insert "\n\n"
+	      (wpmail-initial-shortcodes category wpmail-default-tags))
+      (goto-char restore-point))))
 
 (defun wpmail-initial-shortcodes (category tags)
   "Return the wordpress shortcodes as a string; see wpmail-new-post."
@@ -222,11 +231,16 @@ directory otherwise. The suffix depends on wpmail-use-markdown."
 Partly copied from Trey Jackson
 <http://stackoverflow.com/questions/679275/sending-email-in-emacs-programs>."
   (interactive)
-  (let ((content (buffer-substring-no-properties (point-min) (point-max))))
-    (message-mail wpmail-post-email wpmail-post-title)
-    (message-goto-body)
-    (insert content)
-    (message-send-and-exit)))
+  (let ((configured (wpmail-post-configured-p))
+	(warning "This post doesn't seem to be configured yet; it lacks either a title or some wordpress shortcodes. (Initialize with wpmail-new-post-here.) Continue?"))
+    (when (or configured
+	      (and (not configured)
+		   (y-or-n-p warning)))
+      (let ((content (buffer-substring-no-properties (point-min) (point-max))))
+	(message-mail wpmail-post-email wpmail-post-title)
+	(message-goto-body)
+	(insert content)
+	(message-send-and-exit)))))
 
 (defun wpmail-post-configured-p ()
   "Determine whether we're ready to send the current buffer."
@@ -255,7 +269,6 @@ Partly copied from Trey Jackson
 	(wpmail-trim " foo "))
       (expect "foo bar"
 	(wpmail-trim " foo bar "))
-
      ; That'd be nice, but doesn't work with el-expectations.
      ; (dolist foo '("foo" " foo" "foo " " foo ")
      ;         (expect "foo" (wpmail-trim foo)))
