@@ -127,10 +127,6 @@ some text around point, if it's not empty and not too long."
 
 ;; End helpers ---------------------------------------------
 
-(defvar wpmail-post-title "wpmail.el post"
-  "The post's title when sending it off.
-Will be set by `wpmail-new-post' or `wpmail-new-post-here'.")
-
 (defun wpmail-new-post (title category init-content)
   "Start a new wordpress blog post in a new buffer.
 The post will have the title TITLE and be in category CATEGORY.
@@ -282,6 +278,10 @@ Partly copied from Trey Jackson
      (desc "post-configured-p")
      (expect nil
        (with-temp-buffer 
+	 (wpmail-post-configured-p)))
+     (expect nil
+       (with-temp-buffer 
+	 (insert "[status draft]")
 	 (wpmail-post-configured-p)))
      (expect (non-nil)
        (with-temp-buffer 
