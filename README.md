@@ -36,7 +36,7 @@ Customize the variables at the top of the code section, and
 # History
 * 2009-07:    First release.
 * 2009-11-03: Add post-configured-p and use it. Allow creating a new
-            post in current buffer.
+  post in current buffer.
 
 # TODO
 
