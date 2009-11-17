@@ -2,7 +2,7 @@
 
 ;; Author: Thomas Kappler <tkappler@gmail.com>
 ;; Created: 2009 June 21
-;; Keywords: wordpress, blog, blogging
+;; Keywords: comm, mail, wordpress, blog, blogging
 ;; URL: <http://github.com/thomas11/wpmail/tree/master>
 
 ;; Copyright (C) 2009 Thomas Kappler
