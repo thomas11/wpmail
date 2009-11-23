@@ -1,11 +1,13 @@
 ;;; wpmail.el --- Post to wordpress by e-mail
 
+;; Copyright (C) 2009 Thomas Kappler
+
 ;; Author: Thomas Kappler <tkappler@gmail.com>
 ;; Created: 2009 June 21
 ;; Keywords: comm, mail, wordpress, blog, blogging
 ;; URL: <http://github.com/thomas11/wpmail/tree/master>
 
-;; Copyright (C) 2009 Thomas Kappler
+;; This file is not part of GNU Emacs.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -89,6 +91,8 @@ it.")
 
 (defvar wpmail-default-tags "programming"
   "A list of post tags that will appear whenever you start a new post.")
+
+(defvar wpmail-markdown-command "Markdown.pl")
 
 (defconst wpmail-category-is-also-tag t
   "Non-nil means that initially a post's category will also be one of its tags.")
@@ -207,6 +211,8 @@ directory otherwise. The suffix depends on wpmail-use-markdown."
   "Return the wordpress shortcodes as a string; see wpmail-new-post."
   (mapconcat 'identity 
 	     (list
+              (when wpmail-markdown-command
+                "-- wpmail markdown cut-off, do not touch --")
 	      (concat "[category " category "]")
 	      (concat "[tags " tags 
 		      (if wpmail-category-is-also-tag (concat "," category) "")
@@ -232,11 +238,30 @@ Partly copied from Trey Jackson
     (when (or configured
 	      (and (not configured)
 		   (y-or-n-p warning)))
-      (let ((content (buffer-substring-no-properties (point-min) (point-max))))
+      (let* ((msg-body
+              (if wpmail-markdown-command
+                  (wpmail-markdown-to-html)
+                (buffer-substring-no-properties (point-min) (point-max)))))
 	(message-mail wpmail-post-email wpmail-post-title)
 	(message-goto-body)
-	(insert content)
+	(insert msg-body)
 	(message-send-and-exit)))))
+
+; TODO
+;  - <pre><code> to just <pre>
+;  - join line breaks inside <p>?? wordpress is just stupid...
+(defun wpmail-markdown-to-html (post)
+  "Convert post in current buffer from Markdown to HTML."
+  (with-temp-buffer
+    (insert post)
+    (goto-char (point-min))
+    (let ((end (progn
+                 (search-forward "-- wpmail markdown cut-off, do not touch --")
+                 (beginning-of-line)
+                 (kill-line)
+                 (point))))
+      (shell-command-on-region (point-min) end wpmail-markdown-command t t)
+      (buffer-substring-no-properties (point-min) (point-max)))))
 
 (defun wpmail-post-configured-p ()
   "Determine whether we're ready to send the current buffer."

@@ -1,11 +1,13 @@
 # wpmail.el --- Post to wordpress by e-mail
 
+Copyright (C) 2009 Thomas Kappler
+
 * Author: Thomas Kappler <tkappler@gmail.com>
 * Created: 2009 June 21
 * Keywords: comm, mail, wordpress, blog, blogging
 * URL: <http://github.com/thomas11/wpmail/tree/master>
 
-Copyright (C) 2009 Thomas Kappler
+This file is not part of GNU Emacs.
 
 Licensed under the [GPL version 3](http://www.gnu.org/licenses/) or later.
 
