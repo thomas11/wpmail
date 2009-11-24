@@ -32,15 +32,21 @@
 ;; <http://support.wordpress.com/post-by-email/>.
 
 ;; Start a new post, possibly from the region or the buffer, with
-;; wpmail-new-post, and send it with wpmail-send-post when you are
-;; done.  wpmail-new-post will prompt for title and category; it will
-;; propose some titles you can see via M-n, and auto-completes the
-;; categories in wpmail-categories.  See the documentation of these
-;; functions for details.
+;; wpmail-new-post or wpmail-new-post-here. Send it with
+;; wpmail-send-post when you are done.  wpmail will prompt for title
+;; and category; it will propose some titles that you can see via M-n,
+;; and it auto-completes the categories in wpmail-categories.  See the
+;; documentation of these functions for details.
+
+;; You can write your posts in Markdown format
+;; <http://daringfireball.net/projects/markdown/> if you have
+;; markdown-mode <http://jblevins.org/projects/markdown-mode/>
+;; installed. Set wpmail-markdown-command to your Markdown converter
+;; and posts will be converted to HTML when sending them.
 
 ;;; Dependencies:
 ;; Message from Gnus.  It is included in Emacs, at least in version
-;; 23.  Tested with Gnus v5.13.
+;; 23.  Tested with Emacs 23 and Gnus v5.13.
 
 ;;; Installation:
 ;; Customize the variables at the top of the code section, and
@@ -50,21 +56,24 @@
 ;; 2009-07:    First release.
 ;; 2009-11-03: Add post-configured-p and use it. Allow creating a new
 ;;   post in current buffer.
+;; 2009-11-24: Add Markdown support.
 
 ;;; TODO
 
 ;; When proposing the file name for a title, remove suffixes.
 
-;; Add Markdown support, converting the post to HTML when sending.
-
 ;; Offer before- and after-send hooks, to allow things like
 ;; transforming the markup or saving all published posts in a certain
 ;; directory.
 
+;; If you set wpmail-markdown-command, wpmail blindly assumes you use
+;; Markdown for all your posts and will convert them all when sending
+;; them off.
+
 ;;; Code:
 (require 'message)
 
-(defconst wpmail-posts-dir "~/Documents/Blog/jugglingbits.wordpress.com/posts"
+(defconst wpmail-posts-dir "~/Writing/Blog/jugglingbits.wordpress.com/posts"
   "The directory where you store your blog posts.
 wpmail-new-post will open a new buffer visiting a file there.
 Can be nil; you can always turn the current buffer into a blog
@@ -94,8 +103,14 @@ it.")
 
 (defvar wpmail-markdown-command "Markdown.pl")
 
-(defconst wpmail-category-is-also-tag t
+(defvar wpmail-category-is-also-tag t
   "Non-nil means that initially a post's category will also be one of its tags.")
+
+(defconst wpmail-cutoff-line
+  "-- wpmail markdown cut-off, do not touch --"
+  "A special line that marks the end of the actual post and the
+  beginning of the wordpress shortcodes. Will not appear in
+  posts.")
 
 
 ;; Some helpers that might go into a more general library.
@@ -184,9 +199,10 @@ the current buffer."
 (defun wpmail-path-to-post-file (title)
   "Find the path to a file with blog post TITLE.
 The file will be in wpmail-posts-dir if non-nil, in the current
-directory otherwise. The suffix depends on wpmail-use-markdown."
+directory otherwise. If you write in Markdown, the suffix will be
+.wp.md; otherwise just .wp."
   (let ((dir (if wpmail-posts-dir wpmail-posts-dir ".")))
-    (concat dir "/" title ".wp")))
+    (concat dir "/" title ".wp" (when wpmail-markdown-command ".md"))))
 
 (defun wpmail-create-and-show-new-post-buffer (title category content)
   "Create a new buffer named TITLE and initialize it."
@@ -211,8 +227,7 @@ directory otherwise. The suffix depends on wpmail-use-markdown."
   "Return the wordpress shortcodes as a string; see wpmail-new-post."
   (mapconcat 'identity 
 	     (list
-              (when wpmail-markdown-command
-                "-- wpmail markdown cut-off, do not touch --")
+              (when wpmail-markdown-command wpmail-cutoff-line)
 	      (concat "[category " category "]")
 	      (concat "[tags " tags 
 		      (if wpmail-category-is-also-tag (concat "," category) "")
@@ -235,33 +250,43 @@ Partly copied from Trey Jackson
   (interactive)
   (let ((configured (wpmail-post-configured-p))
 	(warning "This post doesn't seem to be configured yet; it lacks either a title or some wordpress shortcodes. (Initialize with wpmail-new-post-here.) Continue?"))
-    (when (or configured
-	      (and (not configured)
-		   (y-or-n-p warning)))
-      (let* ((msg-body
+    (when (or configured (y-or-n-p warning))
+      (let* ((buffer-content
+              (buffer-substring-no-properties (point-min) (point-max)))
+             (msg-body
               (if wpmail-markdown-command
-                  (wpmail-markdown-to-html)
-                (buffer-substring-no-properties (point-min) (point-max)))))
+                  (wpmail-markdown-to-html buffer-content)
+                buffer-content)))
 	(message-mail wpmail-post-email wpmail-post-title)
 	(message-goto-body)
 	(insert msg-body)
 	(message-send-and-exit)))))
 
-; TODO
-;  - <pre><code> to just <pre>
-;  - join line breaks inside <p>?? wordpress is just stupid...
 (defun wpmail-markdown-to-html (post)
-  "Convert post in current buffer from Markdown to HTML."
+  "Convert the current post from Markdown to HTML.
+Returns the HTML in a string, the current buffer is not modified."
   (with-temp-buffer
     (insert post)
     (goto-char (point-min))
-    (let ((end (progn
-                 (search-forward "-- wpmail markdown cut-off, do not touch --")
-                 (beginning-of-line)
-                 (kill-line)
-                 (point))))
-      (shell-command-on-region (point-min) end wpmail-markdown-command t t)
+    (let ((end-of-post (wpmail-end-of-post)))
+      (shell-command-on-region (point-min) end-of-post
+                               wpmail-markdown-command t t)
+
+      ;; Wordpress turns some line breaks into <br />. Grrr.
+      (let ((fill-column 1000))
+        (fill-region (point-min) end-of-post))
+
       (buffer-substring-no-properties (point-min) (point-max)))))
+
+(defun wpmail-end-of-post ()
+  "Find the end of the actual post, i.e., before the wordpress
+shortcodes begin."
+  (save-excursion
+    (goto-char (point-min))
+    (search-forward wpmail-cutoff-line nil t)
+    (beginning-of-line)
+    (kill-line)
+    (point)))
 
 (defun wpmail-post-configured-p ()
   "Determine whether we're ready to send the current buffer."
@@ -318,7 +343,18 @@ Partly copied from Trey Jackson
      (expect (non-nil)
        (with-temp-buffer 
 	 (wpmail-initialize-this-buffer "title" "category" (point-min))
-	 (wpmail-post-configured-p))))))
+	 (wpmail-post-configured-p)))
+
+     (desc "end of post")
+     (expect 1
+       (with-temp-buffer
+         (insert wpmail-cutoff-line)
+         (wpmail-end-of-post)))
+     (expect 10
+       (with-temp-buffer
+         (insert "bla bla\n\n")
+         (insert wpmail-cutoff-line)
+         (wpmail-end-of-post))))))
 
 ;; End unit tests. -----------------------------------------
 
