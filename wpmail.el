@@ -215,8 +215,7 @@ directory otherwise. If you write in Markdown, the suffix will be
   (let ((configured (wpmail-post-configured-p))
 	(warning "This buffer seems to be initialized as a wordpress post already. New shortcodes will simply be added at the end. Continue?"))
     (when (or (not configured)
-	      (and configured
-		   (y-or-n-p warning)))
+	      (y-or-n-p warning))
       (set (make-local-variable 'wpmail-post-title) title)
       (goto-char (point-max))
       (insert "\n\n"
